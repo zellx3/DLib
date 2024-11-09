@@ -99,7 +99,5 @@ endif()
 if(BUILD_DVision)
   install(DIRECTORY include/DVision DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 endif()
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DLibConfig.cmake"
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
-install(FILES "${PROJECT_BINARY_DIR}/DLibConfig.cmake" 
+install(FILES "${PROJECT_BINARY_DIR}/DLibConfig.cmake"
   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/DLib/)
