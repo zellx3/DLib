@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.0)
-project(DLib)
+cmake_minimum_required(VERSION 3.20)
+project(DLib VERSION 1.0)
 
 option(BUILD_DUtils   "Build DUtils (basic c++ functions)." ON)
 option(BUILD_DUtilsCV "Build DUtilsCV (OpenCV functions, requires DUtils)." ON)
@@ -67,7 +67,6 @@ if(BUILD_DVision)
   endif(Boost_FOUND)
 endif(BUILD_DVision)
 
-
 if(BUILD_DUtilsCV OR BUILD_DVision)
   find_package(OpenCV REQUIRED)
 endif(BUILD_DUtilsCV OR BUILD_DVision)
@@ -77,27 +76,69 @@ if(WIN32)
   set(LIB_SHARED "STATIC")
 endif(WIN32)
 
-add_library(${PROJECT_NAME} ${LIB_SHARED} ${SRCS})
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-target_include_directories(${PROJECT_NAME} PUBLIC include/DUtils include/DUtilsCV include/DVision ${OpenCV_INCLUDE_DIRS})
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11)
+add_library(${PROJECT_NAME}
+    ${LIB_SHARED}
+    ${SRCS})
+
+target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+      ${OpenCV_LIBS})
+
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+# Additional individual includes
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/DUtils>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/DUtilsCV>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/DVision>
+)
+
+set_target_properties(${PROJECT_NAME}
+    PROPERTIES
+      CXX_STANDARD 11)
+
 if (Boost_FOUND)
-  target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
-  target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME}
+      PUBLIC
+      ${Boost_LIBRARIES})
+
+  target_include_directories(${PROJECT_NAME}
+      PUBLIC
+      ${Boost_INCLUDE_DIRS})
 endif()
 
-configure_file(src/DLib.cmake.in
-  "${PROJECT_BINARY_DIR}/DLibConfig.cmake" @ONLY)
+include(GNUInstallDirs)
 
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-if(BUILD_DUtils)
-  install(DIRECTORY include/DUtils DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-endif()
-if(BUILD_DUtilsCV)
-  install(DIRECTORY include/DUtilsCV DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-endif()
-if(BUILD_DVision)
-  install(DIRECTORY include/DVision DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-endif()
-install(FILES "${PROJECT_BINARY_DIR}/DLibConfig.cmake"
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/DLib/)
+export(TARGETS ${PROJECT_NAME} FILE "${PROJECT_NAME}Targets.cmake")
+
+install(TARGETS ${PROJECT_NAME}
+    EXPORT "${PROJECT_NAME}Targets"
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(DIRECTORY "include/" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(EXPORT "${PROJECT_NAME}Targets"
+    FILE "${PROJECT_NAME}Targets.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
+
+install(FILES "cmake/${PROJECT_NAME}Config.cmake" "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
